@@ -34,11 +34,11 @@ def load_args(argv):
             print ('Invalid option', argv)
             sys.exit(2)
 
-def load_model(weights_path):
+def load_model(weights_path=None):
     '''
     Load the model for the Neural Network
     '''
-    model = VGG19(include_top=False, weights=None, input_tensor=None, input_shape=None)
+    model = VGG19(include_top=True, weights=None, input_tensor=None, input_shape=None)
     
     return model
 

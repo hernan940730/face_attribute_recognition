@@ -7,16 +7,24 @@ def load_attributes(file_path):
         "img_count": 0,
         "labels_count" : 0,
         "labels": [],
-        "images": {}
+        "img_names": [],
+        "attributes" : []
         }
     
     attr["img_count"] = int( f.readline() )
-    attr["labels"] = [label for label in f.readline().split(" ")]
+    attr["labels"] = [label for label in f.readline().split()]
     attr["labels_count"] = len(attr["labels"])
     
-    for i in range(atrr["img_count"]):
-        line = f.readline().split(" ")
+    attributes = []
     
+    for i in range(attr["img_count"]):
+        line = f.readline().strip().split()
+        bits = []
+        for i in range( 1, len(line) ):
+            bits.append(1 if int(line[i]) == 1 else 0 )
+        attr["img_names"].append( line[0] )
+        attributes.append(bits)
+    attr["attributes"] = attributes
     return attr
 
 def load_file(file_path):

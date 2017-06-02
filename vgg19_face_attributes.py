@@ -5,6 +5,7 @@ from keras.models import Model
 from keras.utils import plot_model
 
 from my_utils import load_args
+from my_utils import load_attributes
 
 import sys
 import numpy as np
@@ -52,6 +53,12 @@ def train ():
     pass
 
 if __name__ == "__main__":
+    
+    attr = load_attributes("/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/Anno/list_attr_celeba.txt")
+    
+    print ("Image count:", attr["img_count"])
+    print ("Label count:", attr["labels_count"])
+    print (attr["attributes"][0])
     
     args_map = load_args( sys.argv[1:] )
     

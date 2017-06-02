@@ -16,7 +16,7 @@ def load_model (weights_path = None):
     Load the model for the Neural Network
     '''
 
-    model = VGG19(include_top=False, weights=None, input_tensor=None, input_shape=(224, 224, 3))
+    model = VGG19(include_top=False,  input_tensor=None, input_shape=(224, 224, 3))
     
     print ("VGG19 Model:")
     model.summary()
@@ -27,13 +27,9 @@ def load_model (weights_path = None):
     x = Flatten(name='flatten')(last_layer)
     x = Dense(4096, activation='relu', name='fc1')(x)
     
-    output_layers = ( 
-        Dense(3, activation='softmax', name='eye_predictions')(x), 
-        Dense(5, activation='softmax', name='hair_predictions')(x), 
-        Dense(2, activation='softmax', name='face_predictions')(x)
-        )
+    output_layer = Dense(40, activation='sigmoid', name='predictions')(x)
     
-    model = Model(input = input_layer, output = output_layers)
+    model = Model(input = input_layer, output = output_layer)
     
     if weights_path != None:
         model.load_weights(weights_path)
@@ -71,7 +67,7 @@ if __name__ == "__main__":
         print ("Predicting...")
         preds = predict(image_path)
         print ('Predicted:', preds)
-
+        print (sum(preds[0]))
     if (train_model == True):
         print ("Training...")
-        
+            

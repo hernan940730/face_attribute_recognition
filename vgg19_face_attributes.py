@@ -26,8 +26,6 @@ def load_model (weights_path = None):
     last_layer = model(input_layer)
 
     x = Flatten(name='flatten')(last_layer)
-    x = Dense(4096, activation='relu', name='fc1')(x)
-    
     output_layer = Dense(40, activation='sigmoid', name='predictions')(x)
     
     model = Model(input = input_layer, output = output_layer)

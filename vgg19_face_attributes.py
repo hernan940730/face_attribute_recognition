@@ -7,8 +7,15 @@ from keras.utils import plot_model
 from my_utils import load_args
 from my_utils import load_attributes
 
+import cv2
+import os
+
 import sys
 import numpy as np
+
+DATASET_FOLDER="dataset/"
+WEIGHTS_FOLDER="weights/"
+
     
 labels = ["eyes"] * 3
 
@@ -39,8 +46,23 @@ def load_model (weights_path = None):
     
     return model
 
+
+def preprocess_image(image_path):
+    face_class = os.path.join(WEIGHTS_FOLDER, 'face_detection/haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(face_class)
+    img = cv2.imread(image_path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    (x, y, w, h) = faces[0]
+    crop_img = img[y:y + h, x:x + w] 
+    cv2.imshow("cropped", crop_img)
+
+    return crop_img
+    
+
+
 def predict (image_path):
-    img = image.load_img(image_path, target_size=(224, 224))
+    img = preprocess_image(image_path)
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -52,7 +74,7 @@ def train ():
 
 if __name__ == "__main__":
     
-    attr = load_attributes("/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/Anno/list_attr_celeba.txt")
+    attr = load_attributes(os.path.join(DATASET_FOLDER, 'Anno/list_attr_celeba.txt'))
     
     print ("Image count:", attr["img_count"])
     print ("Label count:", attr["labels_count"])

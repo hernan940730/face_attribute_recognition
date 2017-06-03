@@ -27,6 +27,9 @@ def load_attributes(file_path):
     attr["attributes"] = attributes
     return attr
 
+def load_dataset(path):
+    pass
+
 def load_file(file_path):
     f = open(file_path, "r")
     return f

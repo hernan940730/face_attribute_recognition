@@ -14,7 +14,8 @@ import sys
 import numpy as np
 
 DATASET_FOLDER="dataset/"
-WEIGHTS_FOLDER="weights/"
+HAAR_WEIGHTS_FOLDER="hweights/"
+
 
     
 labels = ["eyes"] * 3
@@ -48,20 +49,21 @@ def load_model (weights_path = None):
 
 
 def preprocess_image(image_path):
-    face_class = os.path.join(WEIGHTS_FOLDER, 'face_detection/haarcascade_frontalface_default.xml')
+    face_class = os.path.join(HAAR_WEIGHTS_FOLDER, 'haarcascade_frontalface_default.xml')
     face_cascade = cv2.CascadeClassifier(face_class)
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     (x, y, w, h) = faces[0]
     crop_img = img[y:y + h, x:x + w] 
-    cv2.imshow("cropped", crop_img)
-
+    crop_img = cv2.resize(crop_img, (224, 224)) 
+    print ("cropped img")
+    cv2.imwrite("cropped.png", crop_img)
     return crop_img
     
 
 
-def predict (image_path):
+def predict (image_path, model):
     img = preprocess_image(image_path)
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
@@ -85,10 +87,8 @@ if __name__ == "__main__":
     if args_map["dataset_path"] != None:
         DATASET_FOLDER = args_map["dataset_path"]
     
-    if args_map["weights_path"] != None:
-        WEIGHTS_FOLDER = args_map["weights_path"]
-    
     image_path = args_map["image_path"]
+    weights_path = args_map["weights_path"]
     train_model = args_map["train_model"]
     
     print ("Loading model...")
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     
     if (image_path != None):
         print ("Predicting...")
-        preds = predict(image_path)
+        preds = predict(image_path, model)
         print ('Predicted:', preds)
         print (sum(preds[0]))
     if (train_model == True):

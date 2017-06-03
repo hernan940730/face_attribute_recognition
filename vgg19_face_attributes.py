@@ -82,8 +82,13 @@ if __name__ == "__main__":
     
     args_map = load_args( sys.argv[1:] )
     
+    if args_map["dataset_path"] != None:
+        DATASET_FOLDER = args_map["dataset_path"]
+    
+    if args_map["weights_path"] != None:
+        WEIGHTS_FOLDER = args_map["weights_path"]
+    
     image_path = args_map["image_path"]
-    weights_path = args_map["weights_path"]
     train_model = args_map["train_model"]
     
     print ("Loading model...")

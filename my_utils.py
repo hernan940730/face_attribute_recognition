@@ -36,7 +36,7 @@ def load_args(argv):
     Load the arguments given by the user
     '''
     
-    args_array = ["image_path", "train_model", "weights_path"]
+    args_array = ["image_path", "train_model", "weights_path", "dataset_path"]
     
     args_map = { key : None for key in args_array}
     
@@ -46,6 +46,8 @@ def load_args(argv):
         print ('Invalid option', argv)
         sys.exit(2)
     for opt, arg in opts:
+        if opt in ("-d", "--dataset_path"):
+            args_map["dataset_path"] = arg
         if opt in ("-i", "--image_path"):
             args_map["image_path"] = arg
         elif opt in ("-t", "--train_model"):

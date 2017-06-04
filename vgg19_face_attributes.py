@@ -15,6 +15,7 @@ import numpy as np
 
 DATASET_FOLDER="dataset/"
 HAAR_WEIGHTS_FOLDER="hweights/"
+BATCH_SIZE=32
 
 
     
@@ -63,7 +64,7 @@ def preprocess_image(image_path):
     
 
 
-def predict (image_path, model):
+def predict (image_path):
     img = preprocess_image(image_path)
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
@@ -72,7 +73,22 @@ def predict (image_path, model):
     return preds
 
 def train ():
-    pass
+
+    
+    
+    
+    train_data = 
+    train_features = 
+    test_data = 
+    test_features = 
+    
+    
+    model.compile(optimizer='adam', loss='binary_crossentropy',
+        metrics=['accuracy'])
+    model.fit(train_data, train_features,
+        epochs=epochs,
+        batch_size=BATCH_SIZE,
+        validation_data=(test_data, test_features))
 
 if __name__ == "__main__":
     
@@ -97,7 +113,7 @@ if __name__ == "__main__":
     
     if (image_path != None):
         print ("Predicting...")
-        preds = predict(image_path, model)
+        preds = predict(image_path)
         print ('Predicted:', preds)
         print (sum(preds[0]))
     if (train_model == True):

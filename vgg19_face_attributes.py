@@ -13,29 +13,24 @@ import os
 import sys
 import numpy as np
 
-DATASET_FOLDER="dataset/"
-HAAR_WEIGHTS_FOLDER="hweights/"
-BATCH_SIZE=32
+HAAR_WEIGHTS_PATH = "hweights/"
+BATCH_SIZE = 32
 
-
-    
-labels = ["eyes"] * 3
-
-def load_model (weights_path = None):
+def load_model (weights_path = None, label_count = 40):
     '''
     Load the model for the Neural Network
     '''
 
-    model = VGG19(include_top=False,  input_tensor=None, input_shape=(224, 224, 3))
+    model = VGG19(include_top=False, weights=None, input_tensor=None, input_shape=(224, 224, 3))
     
     print ("VGG19 Model:")
     model.summary()
 
-    input_layer = Input(shape=(224,224,3), name = 'image_input')
+    input_layer = Input(shape=(224, 224, 3), name = 'image_input')
     last_layer = model(input_layer)
 
     x = Flatten(name='flatten')(last_layer)
-    output_layer = Dense(40, activation='sigmoid', name='predictions')(x)
+    output_layer = Dense(label_count, activation='sigmoid', name='predictions')(x)
     
     model = Model(input = input_layer, output = output_layer)
     
@@ -48,21 +43,33 @@ def load_model (weights_path = None):
     
     return model
 
-
 def preprocess_image(image_path):
-    face_class = os.path.join(HAAR_WEIGHTS_FOLDER, 'haarcascade_frontalface_default.xml')
+    
+    face_class = os.path.join(HAAR_WEIGHTS_PATH, 'haarcascade_frontalface_default.xml')
     face_cascade = cv2.CascadeClassifier(face_class)
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    
+    if (len(faces) == 0):
+        return cv2.resize(img, (224, 224))
+    
     (x, y, w, h) = faces[0]
-    crop_img = img[y:y + h, x:x + w] 
-    crop_img = cv2.resize(crop_img, (224, 224)) 
+    
+    eps_x = w / 2
+    eps_y = h / 3
+    
+    img_height, img_width, img_channels = img.shape
+    y_from = int(max(y - eps_y, 0))
+    y_to = int(min(y + h + eps_y, img_height))
+    x_from = int(max(x - eps_x, 0))
+    x_to = int(min(x + w + eps_x, img_width))
+    
+    crop_img = img[y_from : y_to, x_from : x_to] 
+    crop_img = cv2.resize(crop_img, (224, 224))
     print ("cropped img")
     cv2.imwrite("cropped.png", crop_img)
     return crop_img
-    
-
 
 def predict (image_path):
     img = preprocess_image(image_path)
@@ -72,12 +79,10 @@ def predict (image_path):
     preds = model.predict(x)
     return preds
 
+'''
 def train ():
-
     
-    
-    
-    train_data = 
+    train_data =  
     train_features = 
     test_data = 
     test_features = 
@@ -89,23 +94,73 @@ def train ():
         epochs=epochs,
         batch_size=BATCH_SIZE,
         validation_data=(test_data, test_features))
+'''
+
+def train(dataset_folder, session_folder, epochs):
+    train_datagen = ImageDataGenerator(
+        rescale=1./3.,
+        fill_mode = "nearest",
+        rotation_range=15,
+        horizontal_flip=True)
+
+    test_datagen = ImageDataGenerator(rescale=1./3.)
+
+    train_folder = os.path.join(dataset_folder, 'training')
+    test_folder = os.path.join(dataset_folder, 'test')
+
+    train_generator = train_datagen.flow_from_directory(
+        train_folder,
+        target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
+        classes=CLASS_NAMES,
+        class_mode='categorical',
+        batch_size=BATCH_SIZE)
+    
+    test_generator = test_datagen.flow_from_directory(
+        test_folder,
+        target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
+        classes=CLASS_NAMES,
+        class_mode='categorical',
+        batch_size=BATCH_SIZE)
+
+    weights_path = os.path.join(session_folder, 'weights')
+    log_path = os.path.join(session_folder, 'logs')
+
+    if not os.path.exists(weights_path):
+        os.makedirs(weights_path)
+
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+
+    tensorboard_callback = TensorBoard(log_dir=log_path)
+    checkpoint_callback = ModelCheckpoint(
+        filepath=os.path.join(weights_path, "weights.{epoch:02d}.hdf5"), save_weights_only=True)
+
+    train_dataset_entries = compute_dataset_entries(train_folder)
+    test_dataset_entries = compute_dataset_entries(test_folder)
+
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=train_dataset_entries // BATCH_SIZE,
+        epochs=epochs,
+        validation_data=test_generator,
+        validation_steps=test_dataset_entries // BATCH_SIZE,
+        callbacks=[tensorboard_callback, checkpoint_callback])
+
 
 if __name__ == "__main__":
     
-    attr = load_attributes(os.path.join(DATASET_FOLDER, 'Anno/list_attr_celeba.txt'))
-    
-    print ("Image count:", attr["img_count"])
-    print ("Label count:", attr["labels_count"])
-    print (attr["attributes"][0])
-    
     args_map = load_args( sys.argv[1:] )
-    
-    if args_map["dataset_path"] != None:
-        DATASET_FOLDER = args_map["dataset_path"]
     
     image_path = args_map["image_path"]
     weights_path = args_map["weights_path"]
     train_model = args_map["train_model"]
+    dataset_path = "dataset/" if args_map["dataset_path"] == None else args_map["dataset_path"]
+    
+    attr = load_attributes(os.path.join(DATASET_PATH, 'Anno/list_attr_celeba.txt'))
+    print ("Image count:", attr["img_count"])
+    print ("Label count:", attr["labels_count"])
+    print (attr["attributes"][0])
+    label_count = attr["labels_count"]
     
     print ("Loading model...")
     model = load_model(weights_path)

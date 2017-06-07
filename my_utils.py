@@ -44,13 +44,11 @@ def load_args(argv):
     args_map = { key : None for key in args_array}
     
     try:
-        opts, args = getopt.getopt(argv, "i:t:w:", [arg + "=" for arg in args_array])
+        opts, args = getopt.getopt(argv, "i:t:w:d:", [arg + "=" for arg in args_array])
     except getopt.GetoptError:
         print ('Invalid option', argv)
         sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-d", "--dataset_path"):
-            args_map["dataset_path"] = arg
+    for opt, arg in opts:        
         if opt in ("-i", "--image_path"):
             args_map["image_path"] = arg
         elif opt in ("-t", "--train_model"):
@@ -61,6 +59,8 @@ def load_args(argv):
                 sys.exit(2)
         elif opt in ("-w", "--weights_path"):
             args_map["weights_path"] = arg
+        elif opt in ("-d", "--dataset_path"):
+            args_map["dataset_path"] = arg
         else:
             print ('Invalid option', argv)
             sys.exit(2)

@@ -1,5 +1,15 @@
-import sys, getopt
+import sys, getopt, os
 
+def load_data(dataset_folder):
+    f_data = open(os.path.join(dataset_folder, "Eval/list_eval_partition.txt"), "r")
+    x_train = []
+    y_train = []
+    x_test = []
+    y_test = []
+    
+    
+    return (x_train, y_train, x_test, y_test)
+    
 def load_attributes(file_path):
     f = open(file_path, "r")
     

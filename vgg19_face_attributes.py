@@ -96,7 +96,7 @@ def train ():
         validation_data=(test_data, test_features))
 '''
 
-def train(dataset_folder, session_folder, epochs):
+def train(dataset_folder, session_folder, epochs, batch_size):
     train_datagen = ImageDataGenerator(
         rescale=1./3.,
         fill_mode = "nearest",
@@ -105,22 +105,19 @@ def train(dataset_folder, session_folder, epochs):
 
     test_datagen = ImageDataGenerator(rescale=1./3.)
 
-    train_folder = os.path.join(dataset_folder, 'training')
-    test_folder = os.path.join(dataset_folder, 'test')
+    (x_train, y_train, x_test, y_test) = load_data(dataset_folder)
 
-    train_generator = train_datagen.flow_from_directory(
-        train_folder,
-        target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
-        classes=CLASS_NAMES,
-        class_mode='categorical',
-        batch_size=BATCH_SIZE)
+    train_generator = train_datagen.flow (
+        x_train, y_train,
+        target_size=(224, 224),
+        batch_size=batch_size
+        )
     
-    test_generator = test_datagen.flow_from_directory(
-        test_folder,
-        target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
-        classes=CLASS_NAMES,
-        class_mode='categorical',
-        batch_size=BATCH_SIZE)
+    test_generator = test_datagen.flow (
+        x_test, y_test,
+        target_size=(224, 224),
+        batch_size=batch_size
+        )
 
     weights_path = os.path.join(session_folder, 'weights')
     log_path = os.path.join(session_folder, 'logs')
@@ -135,15 +132,12 @@ def train(dataset_folder, session_folder, epochs):
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(weights_path, "weights.{epoch:02d}.hdf5"), save_weights_only=True)
 
-    train_dataset_entries = compute_dataset_entries(train_folder)
-    test_dataset_entries = compute_dataset_entries(test_folder)
-
     model.fit_generator(
         train_generator,
-        steps_per_epoch=train_dataset_entries // BATCH_SIZE,
-        epochs=epochs,
+        steps_per_epoch= len(x_train) / batch_size,
+        epochs=epochs
         validation_data=test_generator,
-        validation_steps=test_dataset_entries // BATCH_SIZE,
+        validation_steps=len(x_test) / batch_size,
         callbacks=[tensorboard_callback, checkpoint_callback])
 
 

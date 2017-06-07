@@ -4,8 +4,7 @@ from keras.layers import Flatten, Input, Dense
 from keras.models import Model
 from keras.utils import plot_model
 
-from my_utils import load_args
-from my_utils import load_attributes
+from my_utils import load_args, load_attributes, load_data
 
 import cv2
 import os

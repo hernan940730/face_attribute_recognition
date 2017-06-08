@@ -1,13 +1,36 @@
-import sys, getopt, os
+import sys, getopt, os, cv2
 
-def load_data(dataset_folder):
+def load_data(dataset_folder, attr):
+    print ("Loading data...")
     f_data = open(os.path.join(dataset_folder, "Eval/list_eval_partition.txt"), "r")
     x_train = []
     y_train = []
     x_test = []
     y_test = []
     
+    img_folder = "/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/img_align_celeba"
+    lines = f_data.readlines()
     
+    count = 0
+    for line in lines:
+        count += 1
+        
+        if (count % 1000 == 0 ):
+            print ("Loading:", count / len(lines) * 100, "%")
+        
+        splited_line = line.split()
+        img_name = splited_line[0]
+        opt = int(splited_line[1])
+        img = cv2.imread(os.path.join(img_folder, img_name))
+        
+        if opt == 0:
+            x_train.append(img)
+            y_train.append(attr["images"][img_name])
+        elif opt == 1:
+            x_test.append(img)
+            y_test.append(attr["images"][img_name])
+    
+    print ("Data loaded.")
     return (x_train, y_train, x_test, y_test)
     
 def load_attributes(file_path):
@@ -17,8 +40,7 @@ def load_attributes(file_path):
         "img_count": 0,
         "labels_count" : 0,
         "labels": [],
-        "img_names": [],
-        "attributes" : []
+        "images": {}
         }
     
     attr["img_count"] = int( f.readline() )
@@ -32,9 +54,7 @@ def load_attributes(file_path):
         bits = []
         for i in range( 1, len(line) ):
             bits.append(1 if int(line[i]) == 1 else 0 )
-        attr["img_names"].append( line[0] )
-        attributes.append(bits)
-    attr["attributes"] = attributes
+        attr["images"][line[0]] = bits
     return attr
 
 def load_dataset(path):
@@ -62,8 +82,8 @@ def load_args(argv):
         if opt in ("-i", "--image_path"):
             args_map["image_path"] = arg
         elif opt in ("-t", "--train_model"):
-            if arg in (True, False):
-                args_map["train_model"] = arg
+            if arg in ("True", "False"):
+                args_map["train_model"] = bool(arg)
             else:
                 print ('Invalid option', opt, arg)
                 sys.exit(2)

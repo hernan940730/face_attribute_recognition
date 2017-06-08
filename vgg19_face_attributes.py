@@ -3,6 +3,7 @@ from keras.applications.vgg19 import preprocess_input, decode_predictions, VGG19
 from keras.layers import Flatten, Input, Dense
 from keras.models import Model
 from keras.utils import plot_model
+from keras.preprocessing.image import ImageDataGenerator
 
 from my_utils import load_args, load_attributes, load_data
 
@@ -95,7 +96,7 @@ def train ():
         validation_data=(test_data, test_features))
 '''
 
-def train(dataset_folder, session_folder, epochs, batch_size):
+def train(dataset_folder, session_folder, attributes, epochs = 1000, batch_size = 32):
     train_datagen = ImageDataGenerator(
         rescale=1./3.,
         fill_mode = "nearest",
@@ -104,7 +105,7 @@ def train(dataset_folder, session_folder, epochs, batch_size):
 
     test_datagen = ImageDataGenerator(rescale=1./3.)
 
-    (x_train, y_train, x_test, y_test) = load_data(dataset_folder)
+    (x_train, y_train, x_test, y_test) = load_data(dataset_folder, attributes)
 
     train_generator = train_datagen.flow (
         x_train, y_train,
@@ -134,7 +135,7 @@ def train(dataset_folder, session_folder, epochs, batch_size):
     model.fit_generator(
         train_generator,
         steps_per_epoch= len(x_train) / batch_size,
-        epochs=epochs
+        epochs=epochs,
         validation_data=test_generator,
         validation_steps=len(x_test) / batch_size,
         callbacks=[tensorboard_callback, checkpoint_callback])
@@ -149,10 +150,7 @@ if __name__ == "__main__":
     train_model = args_map["train_model"]
     dataset_path = "dataset/" if args_map["dataset_path"] == None else args_map["dataset_path"]
     
-    attr = load_attributes(os.path.join(DATASET_PATH, 'Anno/list_attr_celeba.txt'))
-    print ("Image count:", attr["img_count"])
-    print ("Label count:", attr["labels_count"])
-    print (attr["attributes"][0])
+    attr = load_attributes(os.path.join(dataset_path, 'Anno/list_attr_celeba.txt'))
     label_count = attr["labels_count"]
     
     print ("Loading model...")
@@ -166,4 +164,6 @@ if __name__ == "__main__":
         print (sum(preds[0]))
     if (train_model == True):
         print ("Training...")
-            
+        train(dataset_path, os.getcwd(), attr)
+        print ("Trained.")
+        

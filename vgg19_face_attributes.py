@@ -4,6 +4,7 @@ from keras.layers import Flatten, Input, Dense
 from keras.models import Model
 from keras.utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ModelCheckpoint, TensorBoard
 
 from my_utils import load_args, load_attributes, load_data
 
@@ -37,6 +38,7 @@ def load_model (weights_path = None, label_count = 40):
     if weights_path != None:
         model.load_weights(weights_path)
         
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     print ("Our Model:")
     model.summary()
     plot_model(model, to_file='model.png')
@@ -79,24 +81,7 @@ def predict (image_path):
     preds = model.predict(x)
     return preds
 
-'''
-def train ():
-    
-    train_data =  
-    train_features = 
-    test_data = 
-    test_features = 
-    
-    
-    model.compile(optimizer='adam', loss='binary_crossentropy',
-        metrics=['accuracy'])
-    model.fit(train_data, train_features,
-        epochs=epochs,
-        batch_size=BATCH_SIZE,
-        validation_data=(test_data, test_features))
-'''
-
-def train(dataset_folder, session_folder, attributes, epochs = 1000, batch_size = 32):
+def train(dataset_folder, session_folder, attributes, epochs = 100000, batch_size = 32):
     train_datagen = ImageDataGenerator(
         rescale=1./3.,
         fill_mode = "nearest",
@@ -109,28 +94,28 @@ def train(dataset_folder, session_folder, attributes, epochs = 1000, batch_size 
 
     train_generator = train_datagen.flow (
         x_train, y_train,
-        target_size=(224, 224),
+        seed=732912,
         batch_size=batch_size
         )
     
     test_generator = test_datagen.flow (
         x_test, y_test,
-        target_size=(224, 224),
+        seed=2738,
         batch_size=batch_size
         )
 
-    weights_path = os.path.join(session_folder, 'weights')
-    log_path = os.path.join(session_folder, 'logs')
+    weights_folder = os.path.join(session_folder, 'weights')
+    log_folder = os.path.join(session_folder, 'logs')
 
-    if not os.path.exists(weights_path):
-        os.makedirs(weights_path)
+    if not os.path.exists(weights_folder):
+        os.makedirs(weights_folder)
 
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
 
-    tensorboard_callback = TensorBoard(log_dir=log_path)
+    tensorboard_callback = TensorBoard(log_dir=log_folder)
     checkpoint_callback = ModelCheckpoint(
-        filepath=os.path.join(weights_path, "weights.{epoch:02d}.hdf5"), save_weights_only=True)
+        filepath=os.path.join(weights_folder, "weights.{epoch:02d}.hdf5"), save_weights_only=True)
 
     model.fit_generator(
         train_generator,
@@ -148,7 +133,12 @@ if __name__ == "__main__":
     image_path = args_map["image_path"]
     weights_path = args_map["weights_path"]
     train_model = args_map["train_model"]
+    
     dataset_path = "dataset/" if args_map["dataset_path"] == None else args_map["dataset_path"]
+    session_path = "session/" if args_map["session_path"] == None else args_map["session_path"]
+    
+    epochs = 100000 if args_map["epochs"] == None else args_map["epochs"]
+    batch_size = 32 if args_map["batch_size"] == None else args_map["batch_size"]
     
     attr = load_attributes(os.path.join(dataset_path, 'Anno/list_attr_celeba.txt'))
     label_count = attr["labels_count"]
@@ -160,10 +150,13 @@ if __name__ == "__main__":
     if (image_path != None):
         print ("Predicting...")
         preds = predict(image_path)
-        print ('Predicted:', preds)
-        print (sum(preds[0]))
+        sel_labels = []
+        for i in range(len(preds[0])):
+            if preds[0][i] == 1:
+                sel_labels.append(attr["labels"][i])
+        print ('Predicted:', sel_labels)
     if (train_model == True):
         print ("Training...")
-        train(dataset_path, os.getcwd(), attr)
+        train(dataset_path, session_path, attr, epochs, batch_size)
         print ("Trained.")
         

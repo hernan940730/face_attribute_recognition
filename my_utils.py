@@ -1,4 +1,5 @@
 import sys, getopt, os, cv2
+import numpy as np
 
 def load_data(dataset_folder, attr):
     print ("Loading data...")
@@ -22,16 +23,19 @@ def load_data(dataset_folder, attr):
         img_name = splited_line[0]
         opt = int(splited_line[1])
         img = cv2.imread(os.path.join(img_folder, img_name))
+        img = cv2.resize(img, (224, 224))
         
-        if opt == 0:
+        if opt == 0 and count <= 50:
             x_train.append(img)
             y_train.append(attr["images"][img_name])
-        elif opt == 1:
+        elif opt == 1 or (count > 50 and count <= 60):
             x_test.append(img)
             y_test.append(attr["images"][img_name])
+        else:
+            break
     
     print ("Data loaded.")
-    return (x_train, y_train, x_test, y_test)
+    return (np.array(x_train), y_train, np.array(x_test), y_test)
     
 def load_attributes(file_path):
     f = open(file_path, "r")
@@ -69,12 +73,12 @@ def load_args(argv):
     Load the arguments given by the user
     '''
     
-    args_array = ["image_path", "train_model", "weights_path", "dataset_path"]
+    args_array = ["image_path", "train_model", "weights_path", "dataset_path", "session_path", "epochs", "batch_size"]
     
     args_map = { key : None for key in args_array}
     
     try:
-        opts, args = getopt.getopt(argv, "i:t:w:d:", [arg + "=" for arg in args_array])
+        opts, args = getopt.getopt(argv, "i:t:w:d:s:e:", [arg + "=" for arg in args_array])
     except getopt.GetoptError:
         print ('Invalid option', argv)
         sys.exit(2)
@@ -91,6 +95,12 @@ def load_args(argv):
             args_map["weights_path"] = arg
         elif opt in ("-d", "--dataset_path"):
             args_map["dataset_path"] = arg
+        elif opt in ("-s", "--session_path"):
+            args_map["session_path"] = arg
+        elif opt in ("-e", "--epochs"):
+            args_map["epochs"] = int(arg)
+        elif opt in ("-b", "--batch_size"):
+            args_map["batch_size"] = int(arg)
         else:
             print ('Invalid option', argv)
             sys.exit(2)

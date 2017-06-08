@@ -1,7 +1,7 @@
 import sys, getopt, os, cv2
 import numpy as np
 
-def load_data(dataset_folder, attr):
+def load_data(img_folder, dataset_folder, attr):
     print ("Loading data...")
     f_data = open(os.path.join(dataset_folder, "Eval/list_eval_partition.txt"), "r")
     x_train = []
@@ -9,7 +9,6 @@ def load_data(dataset_folder, attr):
     x_test = []
     y_test = []
     
-    img_folder = "/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/img_align_celeba"
     lines = f_data.readlines()
     
     count = 0
@@ -25,10 +24,10 @@ def load_data(dataset_folder, attr):
         img = cv2.imread(os.path.join(img_folder, img_name))
         img = cv2.resize(img, (224, 224))
         
-        if opt == 0 and count <= 50:
+        if opt == 0:
             x_train.append(img)
             y_train.append(attr["images"][img_name])
-        elif opt == 1 or (count > 50 and count <= 60):
+        elif opt == 1:
             x_test.append(img)
             y_test.append(attr["images"][img_name])
         else:
@@ -73,7 +72,7 @@ def load_args(argv):
     Load the arguments given by the user
     '''
     
-    args_array = ["image_path", "train_model", "weights_path", "dataset_path", "session_path", "epochs", "batch_size"]
+    args_array = ["image_path", "train_model", "weights_path", "dataset_path", "session_path", "epochs", "batch_size", "dataset_img"]
     
     args_map = { key : None for key in args_array}
     
@@ -101,6 +100,8 @@ def load_args(argv):
             args_map["epochs"] = int(arg)
         elif opt in ("-b", "--batch_size"):
             args_map["batch_size"] = int(arg)
+        elif opt in ("--dataset_img"):
+            args_map["dataset_img"] = arg
         else:
             print ('Invalid option', argv)
             sys.exit(2)

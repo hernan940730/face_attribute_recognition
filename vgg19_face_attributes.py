@@ -81,7 +81,7 @@ def predict (image_path):
     preds = model.predict(x)
     return preds
 
-def train(dataset_folder, session_folder, attributes, epochs = 100000, batch_size = 32):
+def train(img_folder, dataset_folder, session_folder, attributes, epochs = 100000, batch_size = 32):
     train_datagen = ImageDataGenerator(
         rescale=1./3.,
         fill_mode = "nearest",
@@ -90,7 +90,7 @@ def train(dataset_folder, session_folder, attributes, epochs = 100000, batch_siz
 
     test_datagen = ImageDataGenerator(rescale=1./3.)
 
-    (x_train, y_train, x_test, y_test) = load_data(dataset_folder, attributes)
+    (x_train, y_train, x_test, y_test) = load_data(img_folder, dataset_folder, attributes)
 
     train_generator = train_datagen.flow (
         x_train, y_train,
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     
     dataset_path = "dataset/" if args_map["dataset_path"] == None else args_map["dataset_path"]
     session_path = "session/" if args_map["session_path"] == None else args_map["session_path"]
+    img_path = "/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/img_align_celeba" if args_map["dataset_img"] == None else args_map["dataset_img"]
     
     epochs = 100000 if args_map["epochs"] == None else args_map["epochs"]
     batch_size = 32 if args_map["batch_size"] == None else args_map["batch_size"]
@@ -154,9 +155,10 @@ if __name__ == "__main__":
         for i in range(len(preds[0])):
             if preds[0][i] == 1:
                 sel_labels.append(attr["labels"][i])
+        print ('Predicted:', preds)
         print ('Predicted:', sel_labels)
     if (train_model == True):
         print ("Training...")
-        train(dataset_path, session_path, attr, epochs, batch_size)
+        train(img_path, dataset_path, session_path, attr, epochs, batch_size)
         print ("Trained.")
         

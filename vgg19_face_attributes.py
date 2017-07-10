@@ -2,11 +2,11 @@ from keras.preprocessing import image
 from keras.applications.vgg19 import preprocess_input, decode_predictions, VGG19
 from keras.layers import Flatten, Input, Dense
 from keras.models import Model
-from keras.utils import plot_model
+#from keras.utils import plot_model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint, TensorBoard
 
-from my_utils import load_args, load_attributes, load_data
+from my_utils import load_args, load_attributes, load_data, load_names
 
 import cv2
 import os
@@ -17,20 +17,44 @@ import numpy as np
 HAAR_WEIGHTS_PATH = "hweights/"
 BATCH_SIZE = 32
 
+attr_opossite = {
+    "Bald": "Not_Bald",
+    "Big_Lips": "No_Big_Lips",
+    "Big_Nose": "No_Big_Nose",
+    "Blurry": "No_Blurry",
+    "Chubby": "No_Chubby",
+    "Eyeglasses": "No_Eyeglasses",
+    "Male": "Female",
+    "Mustache": "No_Mustache",  
+    "No_Beard": "Beard",
+    "Smiling": "No_Smiling",
+    "Wearing_Earrings": "No_Wearing_Earrings",
+    "Wearing_Hat": "No_Wearing_Hat",
+    "Wearing_Lipstick": "No_Wearing_Lipstick", 
+    "Wearing_Necklace": "No_Wearing_Necklace",
+    "Wearing_Necktie": "No_Wearing_NeckTie",
+    "Young": "Old" 
+    }
+
 def load_model (weights_path = None, label_count = 40):
     '''
     Load the model for the Neural Network
     '''
 
-    model = VGG19(include_top=False, weights=None, input_tensor=None, input_shape=(224, 224, 3))
+    model = VGG19(include_top=False, weights="imagenet", input_tensor=None, input_shape=(224, 224, 3))
+    #plot_model(model, to_file='vgg19.png')
+    for layer in model.layers:
+        layer.trainable = False
     
     print ("VGG19 Model:")
     model.summary()
-
+    
     input_layer = Input(shape=(224, 224, 3), name = 'image_input')
     last_layer = model(input_layer)
 
     x = Flatten(name='flatten')(last_layer)
+    x = Dense(512, activation='relu', name='fc1')(x)
+    x = Dense(512, activation='relu', name='fc2')(x)
     output_layer = Dense(label_count, activation='sigmoid', name='predictions')(x)
     
     model = Model(input = input_layer, output = output_layer)
@@ -41,7 +65,7 @@ def load_model (weights_path = None, label_count = 40):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     print ("Our Model:")
     model.summary()
-    plot_model(model, to_file='model.png')
+    #plot_model(model, to_file='model.png')
     
     return model
 
@@ -94,13 +118,11 @@ def train(img_folder, dataset_folder, session_folder, attributes, epochs = 10000
 
     train_generator = train_datagen.flow (
         x_train, y_train,
-        seed=732912,
         batch_size=batch_size
         )
     
     test_generator = test_datagen.flow (
         x_test, y_test,
-        seed=2738,
         batch_size=batch_size
         )
 
@@ -126,6 +148,53 @@ def train(img_folder, dataset_folder, session_folder, attributes, epochs = 10000
         callbacks=[tensorboard_callback, checkpoint_callback])
 
 
+def train2(img_folder, dataset_folder, session_folder, attributes, epochs = 100, batch_size = 32, chunk = 1024):
+
+    (names_train, names_test) = load_names(dataset_folder)
+
+    weights_folder = os.path.join(session_folder, 'weights')
+    log_folder = os.path.join(session_folder, 'logs')
+
+    if not os.path.exists(weights_folder):
+        os.makedirs(weights_folder)
+
+    if not os.path.exists(log_folder):
+        os.makedirs(log_folder)
+
+    tensorboard_callback = TensorBoard(log_dir=log_folder)
+    
+    for e in range(epochs):
+        print("Epoch %d" % (e + 1))
+        ch = 0
+        for from_i in range(0, len(names_train), chunk):
+            X_train, Y_train = load_data(img_folder, names_train, attributes, from_i, chunk)
+            if from_i == 0:
+                loss = model.fit(X_train, Y_train, batch_size=batch_size, epochs=1, callbacks=[tensorboard_callback])
+            else:
+                loss = model.fit(X_train, Y_train, batch_size=batch_size, epochs=1)
+        model.save_weights(os.path.join(weights_folder, "weights." + str(e) + ".hdf5"))
+        
+def validate(img_folder, dataset_folder, session_folder, attributes, chunk = 1024):
+
+    (names_train, names_test) = load_names(dataset_folder)
+    attr_results = [0.] * attributes["labels_count"]
+    
+    for j in range(100):
+        img_name = names_test[j]
+        image_path = os.path.join(img_folder, img_name)
+        y = attributes["images"][img_name]
+        preds = predict(image_path)
+        for i in range(len(preds[0])):
+            prediction = 1 if preds[0][i] >= 0.5 else 0
+            if (prediction == y[i]):
+                attr_results[i] += 1.
+
+    for i in range(len(attr_results)):
+        attr_results[i] /= 100.
+    
+    print (attr_results)
+    print (sum(attr_results) / len(attr_results))
+        
 if __name__ == "__main__":
     
     args_map = load_args( sys.argv[1:] )
@@ -137,9 +206,11 @@ if __name__ == "__main__":
     dataset_path = "dataset/" if args_map["dataset_path"] == None else args_map["dataset_path"]
     session_path = "session/" if args_map["session_path"] == None else args_map["session_path"]
     img_path = "/home/hernan940730/Downloads/Inteligentes/Face Attributes Recognizer/img_align_celeba" if args_map["dataset_img"] == None else args_map["dataset_img"]
-    
-    epochs = 100000 if args_map["epochs"] == None else args_map["epochs"]
+    validation = args_map["validation"]
+
+    epochs = 10 if args_map["epochs"] == None else args_map["epochs"]
     batch_size = 32 if args_map["batch_size"] == None else args_map["batch_size"]
+    chunk = 16 if args_map["chunk"] == None else args_map["chunk"]
     
     attr = load_attributes(os.path.join(dataset_path, 'Anno/list_attr_celeba.txt'))
     label_count = attr["labels_count"]
@@ -153,12 +224,16 @@ if __name__ == "__main__":
         preds = predict(image_path)
         sel_labels = []
         for i in range(len(preds[0])):
-            if preds[0][i] == 1:
+            if preds[0][i] >= 0.5:
                 sel_labels.append(attr["labels"][i])
+            elif attr["labels"][i] in attr_opossite:
+                sel_labels.append(attr_opossite[attr["labels"][i]])
         print ('Predicted:', preds)
         print ('Predicted:', sel_labels)
+        
     if (train_model == True):
         print ("Training...")
-        train(img_path, dataset_path, session_path, attr, epochs, batch_size)
+        train2(img_path, dataset_path, session_path, attr, epochs, batch_size, chunk)
         print ("Trained.")
-        
+    if (validation == True):
+        validate(img_path, dataset_path, session_path, attr, chunk)
